@@ -47,14 +47,20 @@ et = time.time()
 s = 'Word embedding created in %f secs.' % (et-st)
 print(s)
 
-# fit a 2d PCA model to the vectors
-X = model[model.wv.vocab]
-pca = PCA(n_components=2)
-result = pca.fit_transform(X)
+# save to pickle file for later use
+model.wv.save_word2vec_format('icmc_word_vectors.pickle')
 
-# create a scatter plot of the projection
-pyplot.scatter(result[:, 0], result[:, 1])
-words = list(model.wv.vocab)
-for i, word in enumerate(words):
-	pyplot.annotate(word, xy=(result[i, 0], result[i, 1]))
-pyplot.show() 
+'''
+visualize embeddings created
+'''
+# fit a 2d PCA model to the vectors
+# X = model[model.wv.vocab]
+# pca = PCA(n_components=2)
+# result = pca.fit_transform(X)
+
+# # create a scatter plot of the projection
+# pyplot.scatter(result[:, 0], result[:, 1])
+# words = list(model.wv.vocab)
+# for i, word in enumerate(words):
+# 	pyplot.annotate(word, xy=(result[i, 0], result[i, 1]))
+# pyplot.show() 
