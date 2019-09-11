@@ -47,8 +47,8 @@ X_train, X_test, Y_train, Y_test = train_test_split(dataX, dataY, test_size=0.20
 print("Train x, Train y: ",len(X_train),len(Y_train))
 print("Test x, Test y: ",len(X_test),len(Y_test))
 
-print("Creating embeddings for training and testing data..")
 # save train and test sentences as embeddings in pickle files
+print("Creating embeddings for training and testing data..")
 x_train_embeddings=[]
 for single_comment in X_train:
     x_train_embeddings.append(wordmodel[single_comment.split()])
@@ -75,3 +75,14 @@ print(s)
 with open('x_train.pkl', 'rb') as f:
     mynewlist = pickle.load(f)
 '''
+# save pickle files of train_labels and test_labels
+print("Starting to create Label Pickle files..")
+st=time.time()
+with open('y_train.pkl', 'wb') as f:
+    pickle.dump(Y_train, f)
+del f
+with open('y_test.pkl', 'wb') as f:
+    pickle.dump(Y_test, f)
+et = time.time()
+s = 'Label Pickle files created in %f secs.' % (et-st)
+print(s)
