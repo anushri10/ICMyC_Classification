@@ -1,8 +1,11 @@
 import os
 import time
 import pandas as pd
+import numpy as np
+import pickle
 from nltk.corpus import stopwords
 from gensim.models import Word2Vec
+from gensim.models import KeyedVectors
 from sklearn.decomposition import PCA
 from matplotlib import pyplot
 import re
@@ -23,8 +26,8 @@ df['description']=df['description'].apply(lambda x:re.sub(r"\s+", ' ', x))
 df['category_title']=df['category_title'].apply(lambda x: x.lower().translate(str.maketrans(string.punctuation,' '*len(string.punctuation)))) 
 df['category_title']=df['category_title'].apply(lambda x:re.sub(r"\s+", ' ', x))
 
-# df.to_csv('check.csv')
-# print(df.head(3))
+df.to_csv('check.csv')
+print(df.head(3))
 
 # split sentences into a list of words to create embeddings
 sent_list=[]
@@ -66,6 +69,25 @@ print(s)
 # save to pickle file for later use
 # model.wv.save_word2vec_format('icmc_word_vectors.bin')
 model.save('icmc_word_vectors.bin')
+model.save('icmc_check.pickle')
+
+'''
+save learnt embeddings as np.array
+'''
+
+wordmodel = Word2Vec.load('icmc_word_vectors.bin')
+check=np.zeros(shape=(len(wordmodel.wv.vocab),300))
+print(type(check))
+count = 0
+for word in wordmodel.wv.vocab:
+    check[count] = wordmodel[word]
+    count+=1
+word_vectors = np.asarray(check).astype(np.float32)
+print(word_vectors.shape)
+
+with open('icmc_vectors_array.pickle', 'wb') as f:
+    pickle.dump(word_vectors, f)
+
 
 '''
 visualize embeddings created
@@ -81,3 +103,6 @@ visualize embeddings created
 # for i, word in enumerate(words):
 # 	pyplot.annotate(word, xy=(result[i, 0], result[i, 1]))
 # pyplot.show() 
+
+
+    
