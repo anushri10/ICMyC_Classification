@@ -8,9 +8,11 @@ import pickle
 
 class CDAN:
     def __init__(self):
-        self.result_dir = "./save_test_2_update/"
+        self.result_dir = "./save_test_2_update_top3_trial/"
         self.model_name = "model.ckpt"
-        self.path_to_model = self.result_dir + self.model_name
+        # self.path_to_model = self.result_dir + self.model_name
+        self.path_to_model = "./save_test_2_update/" + self.model_name
+        
         self.batch_size = 32
         self.iterations = 20
 
@@ -173,7 +175,6 @@ class CDAN:
 
             h_upp_0 = tf.layers.dense(self.encoding_features, self.upper_0, activation=tf.nn.relu, name="Classifier_hidden_upper_0")
             h_upp = tf.layers.dense(h_upp_0, self.upper, activation=tf.nn.relu,kernel_regularizer=tf.contrib.layers.l2_regularizer(0.001), name="Classifier_hidden_upper")
-            # h_upp_2 = tf.layers.dense(self.encoding_features, self.upper_2, activation=tf.nn.relu, name="Classifier_hidden_upper_2")
             h1_0 = tf.layers.dense(h_upp, self.no_hidden_layer_1_0, activation=tf.nn.relu, name="Classifier_hidden1_0")
             h1_0_0 = tf.layers.dense(h1_0, self.no_hidden_layer_1_0_0, activation=tf.nn.relu,kernel_regularizer=tf.contrib.layers.l2_regularizer(0.001), name="Classifier_hidden1_0_0")
             dropout = tf.layers.dropout(h1_0_0,rate=0.3 )
@@ -200,6 +201,7 @@ class CDAN:
 
             self.correct_indices = tf.argmax(self.y_, 1)
             self.predicted_indices = tf.argmax(tf.nn.softmax(self.logits), 1)
+            self.top_3_indices = tf.argsort(tf.nn.softmax(self.logits), 1, direction='DESCENDING')
             self.correct_prediction = tf.equal(self.predicted_indices, self.correct_indices)
 
             self.accuracy = tf.reduce_mean(tf.cast(self.correct_prediction, tf.float32))
@@ -316,34 +318,75 @@ class CDAN:
 
             feed_dict = {self.X: self.target_test, self.y_: self.target_test_label}
 
-            correct_indices, predicted_indices, test_acc = self.classifier_sess.run(
-                [self.correct_indices, self.predicted_indices, self.accuracy],
+            correct_indices, predicted_indices, top_3_indices, test_acc = self.classifier_sess.run(
+                [self.correct_indices, self.predicted_indices, self.top_3_indices, self.accuracy],
                 feed_dict=feed_dict)
 
-            import collections
-            class_wise_example_count = collections.Counter(correct_indices)
-            class_wise_correct_predicted = {}
-            for i in range(len(correct_indices)):
-                if correct_indices[i] == predicted_indices[i]:
-                    if correct_indices[i] in class_wise_correct_predicted.keys():
-                        class_wise_correct_predicted[correct_indices[i]] += 1
-                    else:
-                        class_wise_correct_predicted[correct_indices[i]] = 1
+            # import collections
+            # class_wise_example_count = collections.Counter(correct_indices)
+            # class_wise_correct_predicted = {}
+            # for i in range(len(correct_indices)):
+            #     if correct_indices[i] == predicted_indices[i]:
+            #         if correct_indices[i] in class_wise_correct_predicted.keys():
+            #             class_wise_correct_predicted[correct_indices[i]] += 1
+            #         else:
+            #             class_wise_correct_predicted[correct_indices[i]] = 1
 
         print("Test Accuracy: ", test_acc)
-        with open("./save_test_2_update/after_train_accuracy.txt", "a") as f:
-            f.write("Test Accuracy = " + str(test_acc) + "\n")
-            f.write("Class,Count,Correct Predicted\n")
+        # with open("./save_test_2_update_top3_trial/after_train_accuracy.txt", "a") as f:
+        #     f.write("Test Accuracy = " + str(test_acc) + "\n")
+        #     f.write("Class,Count,Correct Predicted\n")
 
-            for key in class_wise_example_count.keys():
-                if key in class_wise_correct_predicted.keys():
-                    f.write(str(key) + "," + str(class_wise_example_count[key]) + "," + str(
-                        class_wise_correct_predicted[key]) + "\n")
-                else:
-                    f.write(str(key) + "," + str(class_wise_example_count[key]) + ",0\n")
+        #     for key in class_wise_example_count.keys():
+        #         if key in class_wise_correct_predicted.keys():
+        #             f.write(str(key) + "," + str(class_wise_example_count[key]) + "," + str(
+        #                 class_wise_correct_predicted[key]) + "\n")
+        #         else:
+        #             f.write(str(key) + "," + str(class_wise_example_count[key]) + ",0\n")
 
+        with open("./save_test_2_update_top3_trial/after_train_accuracy.txt", "a") as f2:
+            f2.write("Test Accuracy = " + str(test_acc) + "\n")
+            i=0
+            acc = 0
+            print("Length of test X: ", len(self.target_test))
+            print("Length of test Y: ", len(self.target_test_label))
+            print("Length of correct indices: ", len(correct_indices))
+            for val in top_3_indices:
+               
+                # print("VAL STUFF-------------")
+                # # print(type(val))
+                # # print(len(val[0:3]))
+                # print(val)
+                # print(correct_indices[i])
+                f2.write(str(val[0])+" "+str(val[1])+" "+str(val[2])+"\n")
+                if correct_indices[i] in list(val[0:3]):
+                    acc+=1
+                i+=1
+            
+            print("accuracy: ",acc)
+            acc = (acc/len(correct_indices))*100
+            f2.write("Top 3 Accuracy: "+ str(acc))
+                    
+    def predict(self, load_saved_model=True):
+        print("STARTING Predicting")
+        if load_saved_model:
+            self.saver.restore(self.classifier_sess, self.path_to_model)
+            feed_dict = {self.X: self.target_test}
+            top_3_indices = self.classifier_sess.run([self.top_3_indices],feed_dict=feed_dict)
+
+        with open("./Top_3_Predict.txt",'a') as f3:
+            f3.write("Indices of top 3 are: \n")
+            # print(top_3_indices)
+            # print(type(top_3_indices))
+            # print(len(top_3_indices))
+            for val in top_3_indices[0]:
+                # print(val)
+                # print(type(val))
+                # print(len(val))
+                f3.write(str(val[0])+" "+str(val[1])+" "+str(val[2])+"\n")
 
 if __name__ == '__main__':
     model = CDAN()
-    model.train()
-    model.test()
+    # model.train()
+    # model.test()
+    model.predict()
